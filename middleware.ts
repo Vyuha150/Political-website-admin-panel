@@ -26,27 +26,35 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check user role
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL}/api/check-role`,
-    {
+  // Use current request origin to avoid relying on NEXT_PUBLIC_SITE_URL.
+  const checkRoleUrl = new URL("/api/check-role", request.url);
+  try {
+    const response = await fetch(checkRoleUrl, {
       headers: { Cookie: request.headers.get("cookie") || "" },
-    }
-  );
+      cache: "no-store",
+    });
 
-  let role = null;
-  if (response.ok) {
-    try {
+    // Explicit unauthorized/forbidden -> send back to signin
+    if (response.status === 401 || response.status === 403) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/signin";
+      return NextResponse.redirect(url);
+    }
+
+    // If role endpoint itself errors (500), do not hard-lock user in a redirect loop.
+    if (response.ok) {
       const data = await response.json();
-      role = data.role;
-    } catch (e) {
-      role = null;
+      const role = data?.role ?? null;
+      if (!["admin", "staff"].includes(role)) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/signin";
+        return NextResponse.redirect(url);
+      }
     }
-  }
-
-  if (!["admin", "staff"].includes(role)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/signin";
-    return NextResponse.redirect(url);
+  } catch {
+    // If internal role check request fails unexpectedly, allow request through
+    // so the app can surface a proper UI error instead of an infinite redirect.
+    return NextResponse.next();
   }
 
   return NextResponse.next();

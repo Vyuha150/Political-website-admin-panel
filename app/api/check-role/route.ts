@@ -3,11 +3,6 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function GET() {
   const cookieStore = await cookies();
   const access_token = cookieStore.get("sb-access-token")?.value;
@@ -15,6 +10,26 @@ export async function GET() {
   if (!access_token) {
     return NextResponse.json({ role: null }, { status: 401 });
   }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.json(
+      { role: null, error: "Missing Supabase environment variables" },
+      { status: 500 }
+    );
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    },
+  });
 
   // Get user info from the access token
   const {
