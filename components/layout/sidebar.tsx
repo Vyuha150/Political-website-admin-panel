@@ -7,66 +7,67 @@ import {
   LayoutDashboard,
   Users,
   Users2,
+  User,
   FileText,
-  ClipboardList,
   UserCheck,
   MessageSquare,
-  ChevronDown,
   Shield,
   Heart,
   MessageCircle,
+  Mail,
   X,
 } from "lucide-react";
-import { useState } from "react";
 
 const navigation = [
   {
-    name: "Dashboard Overview",
+    name: "Dashboard",
     href: "/",
     icon: LayoutDashboard,
   },
   {
-    name: "User Management",
-    href: "/users",
-    icon: Users,
+    name: "Grievances",
+    href: "/grievances/general",
+    icon: MessageSquare,
   },
   {
-    name: "Yuva Shakthi Members",
-    href: "/yuva-shakthi",
-    icon: Users2,
-  },
-  {
-    name: "Complaints",
-    href: "/complaints",
-    icon: FileText,
-  },
-  {
-    name: "Scheme Eligibility",
-    href: "/scheme-eligibility",
-    icon: ClipboardList,
+    name: "Social Media",
+    href: "/grievances/social-media",
+    icon: MessageCircle,
   },
   {
     name: "Volunteers",
     href: "/volunteers",
     icon: UserCheck,
   },
-];
-
-const grievanceSubmenu = [
   {
-    name: "General Grievances",
-    href: "/grievances/general",
-    icon: MessageSquare,
+    name: "Yuva Shakthi",
+    href: "/yuva-shakthi",
+    icon: Users2,
   },
   {
-    name: "Mahila Shakti Grievances",
+    name: "Mahila Shakthi",
     href: "/grievances/mahila-shakti",
     icon: Heart,
   },
   {
-    name: "Social Media Grievances",
-    href: "/grievances/social-media",
-    icon: MessageCircle,
+    name: "Citizens",
+    href: "/citizens",
+    icon: User,
+  },
+  {
+    name: "Contact Messages",
+    href: "/contact-messages",
+    icon: Mail,
+  },
+  {
+    name: "Citizen Complaints",
+    href: "/complaints",
+    icon: FileText,
+  },
+  {
+    name: "User Management",
+    href: "/users",
+    icon: Users,
   },
 ];
 
@@ -77,9 +78,6 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const [grievancesOpen, setGrievancesOpen] = useState(
-    pathname.startsWith("/grievances")
-  );
 
   return (
     <>
@@ -138,54 +136,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </Link>
               );
             })}
-
-            {/* Grievances with submenu */}
-            <div>
-              <button
-                onClick={() => setGrievancesOpen(!grievancesOpen)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
-                  pathname.startsWith("/grievances")
-                    ? "bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-700 shadow-sm border border-yellow-100"
-                    : "text-gray-600 hover:text-yellow-900 hover:bg-gray-50"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">Grievances</span>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "w-4 h-4 transition-transform flex-shrink-0",
-                    grievancesOpen && "rotate-180"
-                  )}
-                />
-              </button>
-
-              {grievancesOpen && (
-                <div className="ml-8 mt-2 space-y-1">
-                  {grievanceSubmenu.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        onClick={onClose}
-                        className={cn(
-                          "flex items-center gap-3 px-4 py-2.5 text-sm rounded-lg hover:translate-x-3 transition-all duration-200",
-                          isActive
-                            ? "bg-yellow-50 text-yellow-700 font-medium"
-                            : "text-gray-500 hover:text-yellow-700 hover:bg-gray-50"
-                        )}
-                      >
-                        <item.icon className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </nav>
         </div>
       </div>

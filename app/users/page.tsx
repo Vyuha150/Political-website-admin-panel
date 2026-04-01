@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { Users, UserCheck, UserX, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { UserModal } from "@/components/modals/user-model";
@@ -60,6 +61,22 @@ export default function UsersPage() {
   const inactiveUsers = users.filter(
     (user) => user.status === "Inactive"
   ).length;
+
+  const roleData = Object.entries(
+    users.reduce((acc: Record<string, number>, user) => {
+      const key = user.role || "citizen";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const genderData = Object.entries(
+    users.reduce((acc: Record<string, number>, user) => {
+      const key = user.gender || "Not Specified";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([gender, count]) => ({ gender, count }));
 
   // Modal handlers
   const handleAddUser = () => {
@@ -140,7 +157,6 @@ export default function UsersPage() {
           Manage registered users and their profiles
         </p>
       </div>
-
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <OverviewCard
@@ -174,6 +190,22 @@ export default function UsersPage() {
           description="Recent registrations"
           icon={Clock}
           color="purple"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsPieCard
+          title="Users by Role"
+          subtitle="Role composition"
+          data={roleData}
+          emptyMessage="No role data available."
+        />
+
+        <AnalyticsBarCard
+          title="Users by Gender"
+          subtitle="Demographic split"
+          data={genderData.map((entry) => ({ name: entry.gender, value: entry.count }))}
+          emptyMessage="No gender data available."
         />
       </div>
 

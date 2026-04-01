@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsPieCard, AnalyticsVerticalBarCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { FileText, Clock, CheckCircle, AlertTriangle } from "lucide-react";
 import { ComplaintModal } from "@/components/modals/complaints-model"; // You need to create this
@@ -78,6 +79,21 @@ export default function ComplaintsPage() {
   const resolvedComplaints = complaints.filter(
     (c) => c.status === "Resolved"
   ).length;
+  const categoryData = Object.entries(
+    complaints.reduce((acc: Record<string, number>, complaint) => {
+      const key = complaint.problem_category || "Other";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const statusData = Object.entries(
+    complaints.reduce((acc: Record<string, number>, complaint) => {
+      const key = complaint.status || "Pending";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
 
   // Modal handlers
   const handleAddComplaint = () => {
@@ -137,7 +153,6 @@ export default function ComplaintsPage() {
           Track and manage citizen complaints
         </p>
       </div>
-
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <OverviewCard
@@ -167,6 +182,22 @@ export default function ComplaintsPage() {
           description="Successfully closed"
           icon={CheckCircle}
           color="yellow"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Complaints by Category"
+          subtitle="Problem category distribution"
+          data={categoryData}
+          emptyMessage="No category data available."
+        />
+
+        <AnalyticsPieCard
+          title="Complaints by Status"
+          subtitle="Current workflow status split"
+          data={statusData}
+          emptyMessage="No status data available."
         />
       </div>
 

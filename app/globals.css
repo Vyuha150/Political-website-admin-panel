@@ -102,3 +102,9 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
+
+/* Chart.js canvas styling */
+canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsVerticalBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import {
   MessageCircle,
@@ -117,6 +118,34 @@ export default function SocialMediaGrievancesPage() {
 
   const totalGrievances = grievances.length;
 
+  const platformMap = grievances.reduce((acc: Record<string, number>, item) => {
+    if (Array.isArray(item.platforms) && item.platforms.length > 0) {
+      item.platforms.forEach((platform: string) => {
+        const key = platform || "Other";
+        acc[key] = (acc[key] || 0) + 1;
+      });
+    } else {
+      acc.Other = (acc.Other || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const platformData = Object.entries(platformMap).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  const statusMap = grievances.reduce((acc: Record<string, number>, item) => {
+    const key = item.status || "Investigating";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const statusData = Object.entries(statusMap).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
   return (
     <div className="space-y-8 max-w-full">
       <div>
@@ -127,7 +156,6 @@ export default function SocialMediaGrievancesPage() {
           Manage social media related complaints and issues
         </p>
       </div>
-
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <OverviewCard
@@ -161,6 +189,22 @@ export default function SocialMediaGrievancesPage() {
       </div>
 
       {/* Social Media Grievances Table */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Reports by Platform"
+          subtitle="Platform usage distribution"
+          data={platformData}
+          emptyMessage="No platform data available."
+        />
+
+        <AnalyticsPieCard
+          title="Reports by Status"
+          subtitle="Current status breakdown"
+          data={statusData}
+          emptyMessage="No status data available."
+        />
+      </div>
+
       <DataTable
         title="Social Media Grievances"
         columns={socialMediaGrievanceColumns}

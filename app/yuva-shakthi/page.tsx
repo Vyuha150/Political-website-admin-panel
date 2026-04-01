@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsBarCard, AnalyticsPieCard, AnalyticsVerticalBarCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { YuvaShakthiModal } from "@/components/modals/yuva-shakthi-model";
 import { Users2, MapPin, GraduationCap, Briefcase } from "lucide-react";
@@ -136,6 +137,25 @@ export default function YuvaShakthiPage() {
       (m.occupation || "").toLowerCase().includes("work")
   ).length;
 
+  const districtData = Object.entries(
+    members.reduce((acc: Record<string, number>, member) => {
+      const key = member.district || "Unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([district, count]) => ({ district, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
+  const genderData = Object.entries(
+    members.reduce((acc: Record<string, number>, member) => {
+      const key = member.gender || "Not Specified";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
   return (
     <div className="space-y-8 max-w-full">
       <div>
@@ -177,6 +197,22 @@ export default function YuvaShakthiPage() {
           description="Members currently working"
           icon={Briefcase}
           color="orange"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Top Districts"
+          subtitle="Membership concentration"
+          data={districtData.map((item) => ({ name: item.district, value: item.count }))}
+          emptyMessage="No district data available."
+        />
+
+        <AnalyticsPieCard
+          title="Gender Distribution"
+          subtitle="Member split by gender"
+          data={genderData}
+          emptyMessage="No gender data available."
         />
       </div>
 

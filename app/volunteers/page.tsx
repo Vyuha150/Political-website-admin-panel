@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsBarCard, AnalyticsVerticalBarCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { UserCheck, MapPin, Clock, Heart } from "lucide-react";
 import { VolunteerModal } from "@/components/modals/volunteer-model";
@@ -47,6 +48,44 @@ export default function VolunteersPage() {
   const activeVolunteers = volunteers.length; // Replace with your logic
   const constituencies = new Set(volunteers.map((v) => v.constituency)).size;
   const pendingReviews = 0; // Replace with your logic
+
+  const topConstituenciesData = Object.entries(
+    volunteers.reduce((acc: Record<string, number>, volunteer) => {
+      const key = volunteer.constituency || "Unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([constituency, count]) => ({ constituency, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  const submissionVolumeData = (() => {
+    const now = new Date();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() - (6 - i));
+      const key = d.toISOString().split("T")[0];
+      return {
+        key,
+        day: d.toLocaleDateString("en-US", { weekday: "short" }),
+        submissions: 0,
+      };
+    });
+
+    const lookup = new Map(days.map((d) => [d.key, d]));
+
+    volunteers.forEach((volunteer) => {
+      if (!volunteer.submitted_at) return;
+      const dateKey = new Date(volunteer.submitted_at).toISOString().split("T")[0];
+      const day = lookup.get(dateKey);
+      if (day) {
+        day.submissions += 1;
+      }
+    });
+
+    return days;
+  })();
 
   // Modal handlers
   const handleAdd = () => {
@@ -132,6 +171,29 @@ export default function VolunteersPage() {
           description="Applications to review"
           icon={Clock}
           color="orange"
+        />
+      </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Top Constituencies"
+          subtitle="Volunteer concentration by area"
+          data={topConstituenciesData.map((item) => ({
+            name: item.constituency,
+            value: item.count,
+          }))}
+          emptyMessage="No constituency data available."
+        />
+
+        <AnalyticsBarCard
+          title="Submission Volume (7 Days)"
+          subtitle="Recent volunteer application trend"
+          data={submissionVolumeData.map((item) => ({
+            name: item.day,
+            value: item.submissions,
+          }))}
+          emptyMessage="No submission trend data available."
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsVerticalBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { Heart, Shield, AlertTriangle, CheckCircle } from "lucide-react";
 import { MahilaShaktiGrievanceModal } from "@/components/modals/mahila-shakti-grievance-model";
@@ -41,12 +42,56 @@ export default function MahilaShaktiGrievancesPage() {
   // Fetch from Supabase
   const fetchGrievances = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("mahila_shakti_grievances")
-      .select("*")
-      .order("submitted_at", { ascending: false });
-    console.log("Fetched grievances:", data);
-    setGrievances(data || []);
+    const [{ data: grievanceData, error: grievanceError }, { data: registrationData, error: registrationError }] = await Promise.all([
+      supabase
+        .from("mahila_shakti_grievances")
+        .select("*")
+        .order("submitted_at", { ascending: false }),
+      supabase
+        .from("mahila_shakti_registrations")
+        .select("*")
+        .order("submitted_at", { ascending: false }),
+    ]);
+
+    if (grievanceError) console.error("mahila_shakti_grievances fetch error:", grievanceError);
+    if (registrationError) console.error("mahila_shakti_registrations fetch error:", registrationError);
+
+    const normalizedRegistrations = (registrationData || []).map((item: any) => ({
+      id: item.id,
+      user_id: item.user_id,
+      fullname: item.fullname,
+      age: item.age,
+      gender: null,
+      mobile: item.mobile,
+      email: item.email,
+      district: item.district,
+      constituency: item.constituency,
+      mandal: null,
+      ward: null,
+      grievance_types: item.interest_areas || [],
+      grievance_other: item.grievance || null,
+      description: item.why_join || item.grievance || null,
+      attachments: [],
+      response_modes: [],
+      volunteer: null,
+      declaration: item.declaration,
+      status: item.status || "Registered",
+      submitted_at: item.submitted_at,
+      source_table: "mahila_shakti_registrations",
+    }));
+
+    const normalizedGrievances = (grievanceData || []).map((item: any) => ({
+      ...item,
+      source_table: "mahila_shakti_grievances",
+    }));
+
+    const merged = [...normalizedGrievances, ...normalizedRegistrations].sort(
+      (a: any, b: any) =>
+        new Date(b.submitted_at || 0).getTime() -
+        new Date(a.submitted_at || 0).getTime()
+    );
+
+    setGrievances(merged);
     setLoading(false);
   };
 
@@ -75,6 +120,10 @@ export default function MahilaShaktiGrievancesPage() {
 
   const handleDelete = async (grievance: any) => {
     if (window.confirm("Are you sure you want to delete this grievance?")) {
+      if (grievance?.source_table === "mahila_shakti_registrations") {
+        alert("This entry is a Mahila registration record. Please manage it from the registrations table.");
+        return;
+      }
       await supabase
         .from("mahila_shakti_grievances")
         .delete()
@@ -84,6 +133,11 @@ export default function MahilaShaktiGrievancesPage() {
   };
 
   const handleSave = async (data: any) => {
+    if (selectedGrievance?.source_table === "mahila_shakti_registrations") {
+      alert("Editing Mahila registration records from this modal is not supported.");
+      return;
+    }
+
     const payload = {
       ...data,
       age: data.age ? Number(data.age) : null,
@@ -126,6 +180,30 @@ export default function MahilaShaktiGrievancesPage() {
     (g) => g.status === "Under Review"
   ).length;
   const resolved = grievances.filter((g) => g.status === "Resolved").length;
+
+  const grievanceTypeData = Object.entries(
+    grievances.reduce((acc: Record<string, number>, grievance) => {
+      if (Array.isArray(grievance.grievance_types) && grievance.grievance_types.length) {
+        grievance.grievance_types.forEach((item: string) => {
+          const key = item || "Other";
+          acc[key] = (acc[key] || 0) + 1;
+        });
+      } else {
+        acc.Other = (acc.Other || 0) + 1;
+      }
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+
+  const statusData = Object.entries(
+    grievances.reduce((acc: Record<string, number>, grievance) => {
+      const key = grievance.status || "Under Review";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
 
   return (
     <div className="space-y-8 max-w-full">
@@ -170,6 +248,22 @@ export default function MahilaShaktiGrievancesPage() {
         />
       </div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Grievance Types"
+          subtitle="Type-wise case distribution"
+          data={grievanceTypeData}
+          emptyMessage="No grievance-type data available."
+        />
+
+        <AnalyticsPieCard
+          title="Status Distribution"
+          subtitle="Current case status split"
+          data={statusData}
+          emptyMessage="No status data available."
+        />
+      </div>
+
       {/* Mahila Shakti Grievances Table */}
       <DataTable
         title="Mahila Shakti Grievances"
@@ -182,7 +276,9 @@ export default function MahilaShaktiGrievancesPage() {
           response_modes: Array.isArray(grievance.response_modes)
             ? grievance.response_modes.join(", ")
             : grievance.response_modes,
-          description: grievance.description?.substring(0, 50) + "...",
+          description: grievance.description
+            ? `${grievance.description.substring(0, 50)}...`
+            : "",
           declaration: grievance.declaration ? "Yes" : "No",
           submitted_at: grievance.submitted_at
             ? new Date(grievance.submitted_at).toISOString().split("T")[0]

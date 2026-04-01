@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsVerticalBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { ClipboardList, CheckCircle, Clock, Users } from "lucide-react";
 import { SchemeEligibilityModal } from "@/components/modals/scheme-eligibility-model";
@@ -70,6 +71,25 @@ export default function SchemeEligibilityPage() {
     (a) => a.status === "Beneficiary"
   ).length;
 
+  const statusData = Object.entries(
+    applications.reduce((acc: Record<string, number>, app) => {
+      const key = app.status || "Under Review";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, value]) => ({ name, value }));
+
+  const casteData = Object.entries(
+    applications.reduce((acc: Record<string, number>, app) => {
+      const key = app.caste || "Unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([caste, count]) => ({ caste, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
   // Modal handlers
   const handleAdd = () => {
     setModalMode("add");
@@ -127,7 +147,6 @@ export default function SchemeEligibilityPage() {
           Manage government scheme eligibility applications
         </p>
       </div>
-
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         <OverviewCard
@@ -157,6 +176,22 @@ export default function SchemeEligibilityPage() {
           description="Active beneficiaries"
           icon={Users}
           color="purple"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsPieCard
+          title="Applications by Status"
+          subtitle="Workflow breakdown"
+          data={statusData}
+          emptyMessage="No status data available."
+        />
+
+        <AnalyticsBarCard
+          title="Top Caste Segments"
+          subtitle="Applications by caste category"
+          data={casteData.map((entry) => ({ name: entry.caste, value: entry.count }))}
+          emptyMessage="No caste segment data available."
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
+import { AnalyticsVerticalBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { MessageSquare, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { GrievanceModal } from "@/components/modals/grievance-model";
@@ -96,6 +97,29 @@ export default function GeneralGrievancesPage() {
   const inProgress = grievances.filter(
     (g) => g.status === "In Progress"
   ).length;
+
+  const categoryMap = grievances.reduce((acc: Record<string, number>, item) => {
+    const key = item.grievance || "Other";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const grievanceCategoryData = Object.entries(categoryMap).map(
+    ([name, value]) => ({ name, value })
+  );
+
+
+  const statusMap = grievances.reduce((acc: Record<string, number>, item) => {
+    const key = item.status || "Open";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const grievanceStatusData = Object.entries(statusMap).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
 
   // Modal handlers
   const handleAdd = () => {
@@ -204,6 +228,23 @@ export default function GeneralGrievancesPage() {
           </ul>
         </div>
       )}
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <AnalyticsVerticalBarCard
+          title="Grievances by Category"
+          subtitle="Category-wise distribution"
+          data={grievanceCategoryData}
+          emptyMessage="No category data available."
+        />
+
+        <AnalyticsPieCard
+          title="Grievances by Status"
+          subtitle="Current status split"
+          data={grievanceStatusData}
+          emptyMessage="No status data available."
+        />
+      </div>
 
       {/* Grievances Table */}
       <DataTable
