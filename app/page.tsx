@@ -381,6 +381,7 @@ type FormKey =
   | "mahila-shakthi"
   | "citizens"
   | "contact-messages"
+  | "citizen-feedback"
   | "citizen-complaints"
   | "scheme-eligibility";
 
@@ -388,7 +389,7 @@ interface FormConfig {
   key: FormKey;
   label: string;
   table: string;
-  dateField: string;
+  dateFields: string[];
   statusField?: string;
   filters?: { column: string; value: string }[];
 }
@@ -420,61 +421,67 @@ const FORM_CONFIGS: FormConfig[] = [
     key: "grievances",
     label: "Grievances",
     table: "grievances",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
     statusField: "status",
   },
   {
     key: "social-media",
     label: "Social Media",
     table: "social_media_grievances",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
     statusField: "status",
   },
   {
     key: "volunteers",
     label: "Volunteers",
     table: "volunteers",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
   },
   {
     key: "yuva-shakthi",
     label: "Yuva Shakthi",
     table: "yuva_shakthi_members",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
   },
   {
     key: "mahila-shakthi",
     label: "Mahila Shakthi",
     table: "mahila_shakti_grievances",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
     statusField: "status",
   },
   {
     key: "citizens",
     label: "Citizens",
     table: "profiles",
-    dateField: "created_at",
+    dateFields: ["created_at"],
     filters: [{ column: "role", value: "citizen" }],
   },
   {
     key: "contact-messages",
     label: "Contact Messages",
     table: "contact_messages",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at", "created_at"],
     statusField: "status",
+  },
+  {
+    key: "citizen-feedback",
+    label: "Citizen Feedback",
+    table: "citizen_feedback",
+    dateFields: ["submitted_at", "created_at"],
   },
   {
     key: "citizen-complaints",
     label: "Citizen Complaints",
     table: "complaints",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
     statusField: "status",
   },
   {
     key: "scheme-eligibility",
     label: "Scheme Eligibility",
     table: "scheme_eligibility",
-    dateField: "submitted_at",
+    dateFields: ["submitted_at"],
     statusField: "status",
   },
 ];
@@ -536,11 +543,7 @@ async function fetchFormAnalytics(config: FormConfig): Promise<FormAnalytics> {
     monthAxis.map((point) => [point.id, 0])
   );
 
-  const fields = [config.dateField, config.statusField]
-    .filter(Boolean)
-    .join(",");
-
-  let query = supabase.from(config.table).select(fields || "*");
+  let query = supabase.from(config.table).select("*");
 
   if (config.filters?.length) {
     config.filters.forEach((rule) => {
@@ -575,7 +578,9 @@ async function fetchFormAnalytics(config: FormConfig): Promise<FormAnalytics> {
   let lastSubmission: Date | null = null;
 
   rows.forEach((row) => {
-    const dateValue = row[config.dateField];
+    const dateValue = config.dateFields
+      .map((field) => row[field])
+      .find((value) => value);
     const parsedDate = dateValue ? new Date(String(dateValue)) : null;
 
     if (parsedDate && !Number.isNaN(parsedDate.getTime())) {

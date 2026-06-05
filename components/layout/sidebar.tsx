@@ -60,6 +60,11 @@ const navigation = [
     icon: Mail,
   },
   {
+    name: "Citizen Feedback",
+    href: "/citizen-feedback",
+    icon: FileText,
+  },
+  {
     name: "Citizen Complaints",
     href: "/complaints",
     icon: FileText,
