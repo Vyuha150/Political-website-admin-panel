@@ -12,6 +12,7 @@ const nextConfig = {
       "utf-8-validate": false,
       ws: false,
     };
+    turbopack: {}
     return config;
   },
 };
