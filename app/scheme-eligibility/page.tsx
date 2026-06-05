@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { OverviewCard } from "@/components/ui/overview-card";
 import { DataTable } from "@/components/ui/data-table";
-import { AnalyticsVerticalBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
+import { AnalyticsBarCard, AnalyticsPieCard } from "@/components/ui/analytics-charts";
 import { supabase } from "@/lib/supabaseClient";
 import { ClipboardList, CheckCircle, Clock, Users } from "lucide-react";
 import { SchemeEligibilityModal } from "@/components/modals/scheme-eligibility-model";
